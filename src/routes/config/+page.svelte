@@ -1,0 +1,5 @@
+<script>
+</script>
+
+<h1>Test</h1>
+<p>Go <a href="/"> home </a>~</p>
