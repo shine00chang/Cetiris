@@ -13,12 +13,12 @@
      "pt-10 " :
      "pt-2 "}">
 
-  <h1 style="transition: 500ms all ease-in-out; {onMainPage ? 
+  <a href="/" style="transition: 500ms all ease-in-out; {onMainPage ? 
       "font-size: 6rem" : 
       "font-size: 3rem"}"
       class="tracking-wider font-bold">
     Cetiris
-  </h1>
+  </a>
 
   <p style="transition: 500ms all ease-in-out; {onMainPage ? 
       "font-size: 1rem; top: 0px" : 

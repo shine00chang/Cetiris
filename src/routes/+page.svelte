@@ -4,9 +4,9 @@
 </div>
 
 <div class="space-y-6">
-<button class="btn w-96 btn-hover-mv-left">
+<a href="/sprint" class="btn w-96 btn-hover-mv-left">
   Sprint
-</button>
+</a>
 <br>
 
 <button class="btn w-96 btn-hover-mv-left">

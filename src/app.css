@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+*:focus {
+  outline: none;
+}
+
 .btn-hover-mv-left {
   transition: 500ms transform ease-in-out;
 }
