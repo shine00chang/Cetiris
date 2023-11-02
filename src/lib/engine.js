@@ -66,7 +66,7 @@ export class Piece {
 class Move {
   constructor () {
     this.x = 4;
-    this.y = 18;
+    this.y = 19;
     this.r = 0;
   }
   
@@ -140,22 +140,52 @@ class Move {
       else break;
     }
   }
+
+  // Moves placement down by one if possible
+  softDrop (type, board) {
+    let ok = true;
+    for (const {x, y} of this.cells(type)) {
+      ok &= !board.conflict(x, y-1);
+    }
+    if (!ok) return;
+    this.y --;
+  }
+
+  // Returns true if the piece is touching the stack
+  inContact (type, board) {
+    let contacts = false;
+    for (const {x, y} of this.cells(type)) {
+      contacts |= board.conflict(x, y-1);
+    }
+    return contacts;
+  }
+
+  // Returns true if the piece is in the stack (game over check)
+  conflicts (type, board) {
+    let contacts = false;
+    for (const {x, y} of this.cells(type)) {
+      contacts |= board.conflict(x, y);
+    }
+    return contacts;
+
+  }
 }
 
 class Board {
+  static HEIGHT = 25;
   constructor () {
-    this.board = new Array(20).fill('-').map(() => new Array(10).fill('-'));
+    this.board = new Array(Board.HEIGHT).fill('-').map(() => new Array(10).fill('-'));
   }
 
   /* Checks if placing a block here would conflict or be invalid */
   conflict (x, y) {
-    if (x >= 10 || x < 0 || y < 0) return true;
+    if (x >= 10 || x < 0 || y < 0 || y >= Board.HEIGHT) return true;
     return this.board[y][x] != '-';
   }
 
   /* Checks if grid is occupied */
   occupied (x, y) {
-    if (x >= 10 || x < 0 || y < 0) return false;
+    if (x >= 10 || x < 0 || y < 0 || y >= Board.HEIGHT) return false;
     return this.board[y][x] != '-';
   }
 
@@ -166,13 +196,17 @@ class Board {
 
     // Add to board
     for (const {x, y} of move.cells(type)) {
+      if (x >= 10 || x < 0 || y < 0 || y >= Board.HEIGHT) {
+        console.error("Board::place() attempted to write to cell not in range.");
+        continue;
+      }
       this.board[y][x] = type;
     }
 
     // Clear lines
     let clears = 0;
-    let dy = new Array(20);
-    for (let y=0; y<20; y++) {
+    let dy = new Array(Board.HEIGHT);
+    for (let y=0; y<Board.HEIGHT; y++) {
       const filled = this.board[y].reduce((a, b) => a &= b != '-', true);
       this.board[y-clears] = Array.from(this.board[y]);
       dy[y] = -clears;
@@ -187,16 +221,33 @@ class Board {
   }
 }
 
-export default class State {
+export class Game {
+  constructor () 
+  {
+    this.gravity_rate = 1;
+    this.gravity_limit = 60;
+    this.lock_limit = 120;
+  }
+}
+
+export class State {
   constructor () {
     this.counter = 1;
     this.board = new Board();
-    this.dy = new Array(20).fill(0);
+    this.dy = new Array(Board.HEIGHT).fill(0);
     this.queue = [];
+    this.hold = undefined;
     this.bag = [];
     this.move = new Move(); 
     this.das = undefined;
 
+    // Gravity
+    this.gravity_tick = 0;
+    this.lock_tick = 0;
+
+    this.over = false;
+
+    // Fill bag & queue
     this.draw();
   }
 
@@ -216,14 +267,55 @@ export default class State {
 
   /* Called on refresh */
   applyInputs (inputs) {
-    this.dy = new Array(20).fill(0);
+    if (this.over) { 
+      console.error("State::applyInputs() called despite state over");
+      return;
+    }
+
+    // Reset DY
+    this.dy = new Array(Board.HEIGHT).fill(0);
+
+    // Process inputs
     for (const input of inputs) {
       applyKey(this, input);
     }
+
     // DAS 
     if (this.das != undefined && Date.now() - this.das.timestamp > 100) {
       this.move.das(this.queue[0], this.board, this.das.key == "ArrowLeft" ? -1 : 1);
       this.das = undefined;
+    }
+  }
+
+  // Non-input state mutation
+  refresh (game) 
+  {
+    if (this.over) { 
+      console.error("State::refresh() called despite state over");
+      return;
+    }
+    // Locking 
+    if (this.move.inContact(this.queue[0], this.board)) {
+      this.lock_tick += 1;
+      if (this.lock_tick >= game.lock_limit) {
+        this.place();
+      }
+    } else {
+      this.lock_tick = 0;
+    }
+
+    // Gravity
+    if (!this.move.inContact(this.queue[0], this.board)) {
+      this.gravity_tick += game.gravity_rate;
+      while (this.gravity_tick > game.gravity_limit) {
+        this.move.softDrop(this.queue[0], this.board);
+        this.gravity_tick -= game.gravity_limit;
+      }
+    }
+
+    // Game over 
+    if (this.move.conflicts(this.queue[0], this.board)) {
+      this.over = true;
     }
   }
 
@@ -235,14 +327,41 @@ export default class State {
     return ghost;
   }
 
+  // Places piece
   place () {
     let type = this.queue.shift()[0];
     const { clears, dy } = this.board.place(type, this.move);
     this.dy = dy;
 
+    this.pieceChangeResets();
+  }
+
+  swapHold () {
+    if (this.hold == undefined) {
+      this.hold = this.queue.shift()[0];
+      this.draw();
+    } else {
+      const temp = this.hold;
+      this.hold = this.queue[0];
+      this.queue[0] = temp;
+    }
+
+    this.pieceChangeResets();
+  }
+
+  // States that need to be changed if the current piece changed. 
+  // - Called only by State::place() and State:: hold().
+  pieceChangeResets () {
     // Reset move & bag
     this.move = new Move();
     this.draw();
+    
+    // Reset DAS
+    this.das = undefined;
+
+    // Reset lock & gravity tick
+    this.lock_tick = 0;
+    this.gravity_tick = 0;
   }
 }
 
@@ -275,10 +394,15 @@ function applyKey (state, input) {
       const type = state.queue[0];
       state.move.hardDrop(type, state.board);
       state.place();
-
-      // Reset DAS
-      state.das = undefined;
       break;
+
+    case "ArrowDown":
+      state.gravity_tick += 10000;
+      break;
+
+    case "c": 
+      state.swapHold();
+      break; 
 
     case "das-up":
       state.das = undefined;

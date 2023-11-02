@@ -1,5 +1,5 @@
 <div class="my-10">
-  <p class="text-4xl tracking-wider	font-bold my-5 w-1/3">The most popular passtime for students of all ages.</p>
+  <p class="text-4xl tracking-wider	font-bold my-5 w-full md:w-1/3">The most popular passtime for students of all ages.</p>
   <p class="text-xl tracking-wide	italic">Want a break from sprint? Play against the Quaternion bot!</p>
 </div>
 

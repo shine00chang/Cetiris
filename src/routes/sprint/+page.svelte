@@ -1,32 +1,40 @@
 <script>
-  import { POLL_RATE } from '$lib/config.js';
-  import Board from '$lib/board.svelte';
-  import State from '$lib/engine.js';
+  import GameElem from '$lib/game/game.svelte';
 
-  import { onMount } from 'svelte';
+  import { POLL_RATE } from '$lib/config.js';
+  import { State, Game } from '$lib/engine.js';
   
-  let inputElem;
+  let game = new Game();
   let state = new State();
   let inputs = [];
 
+  // Get foucs
+  const getfocus = (e) => e.focus();
+
   // Keydown Event
   const onKeyDown = (e) => {
+    if (state.over) return;
     inputs.push(e.key);
   }
   // Keyup Event - only for DAS
   const onKeyUp = (e) => {
+    if (state.over) return;
     if (e.key == "ArrowLeft" || e.key == "ArrowRight") {
       inputs.push("das-up");
     }
   }
 
-  function getfocus (el) {
-    el.focus()
-  }
-
   // Refreshing
-  setInterval(() => {
+  const interval = setInterval(() => {
+
+    // If over, stop interval
+    if (state.over) {
+      clearInterval(interval);
+      return;
+    }
+
     state.applyInputs(inputs);
+    state.refresh(game);
 
     // Workaroud for object reactivity
     state = state;
@@ -37,5 +45,5 @@
 </script>
 <div use:getfocus tabindex="0" on:keydown={onKeyDown} on:keyup={onKeyUp}
   class="w-full h-full">
-  <Board state={state} />
+  <GameElem state={state} />
 </div>
