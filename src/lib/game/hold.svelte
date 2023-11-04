@@ -26,7 +26,7 @@
 <div class="mt-12">
   <div class="text-center text-2xl font-extrabold tracking-widest">Hold</div>
   <div
-    class="bg-stone-400 rounded-xl"
+    class="bg-[#e9e6e3] rounded-xl"
     style="width: {6*S}px; height: {4*S}px; padding: {S}px;">
     <!-- Piece -->
     <div style="position: relative">

@@ -226,7 +226,7 @@ export class Game {
   {
     this.gravity_rate = 1;
     this.gravity_limit = 60;
-    this.lock_limit = 120;
+    this.lock_limit = 1200;
   }
 }
 
@@ -355,10 +355,10 @@ export class State {
     // Reset move & bag
     this.move = new Move();
     this.draw();
-    
-    // Reset DAS
-    this.das = undefined;
 
+
+    // Note: don't reset DAS: DAS preservation
+    
     // Reset lock & gravity tick
     this.lock_tick = 0;
     this.gravity_tick = 0;

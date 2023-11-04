@@ -8,12 +8,12 @@ export const COLORS = {
   I: "#46dee3",
   O: "#ede04a",
   T: "#aa48db",
-  G: "#666",
-  '#': "#333",
+  G: "#666666",
+  '#': "#333333",
 };
 
-export const GHOST_COLOR = "#ccc";
-export const SHADOW_COLOR = "#888";
+export const GHOST_COLOR = "#cccccc";
+export const SHADOW_COLOR = "#888888";
 
 
 

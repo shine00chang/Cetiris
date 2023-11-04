@@ -9,13 +9,28 @@
 
 <style>
   .block {
+    position: absolute;
     transition: all 100ms;
+  }
+  .highlight {
+    filter: brightness(140%);
   }
 </style>
 
+<!-- Highlight -->
 <div
-  class="block z-10 absolute"
-  style="width: {S}px; height: {S}px; left: {x*S}px; top: {y*S}px; background: {COLORS[type]};">
+  class="block highlight absolute"
+  style="left: {x*S}px; top: {y*S - S/6}px;
+         width: {S}px;
+         height: {S/6}px;
+         background: {COLORS[type]};
+         z-index: {100-y}">
+</div>
+
+
+<div
+  class="block absolute"
+  style="width: {S}px; height: {S}px; left: {x*S}px; top: {y*S}px; background: {COLORS[type]}; z-index: {100-y}">
 </div>
 
 <!-- Shadow -->
