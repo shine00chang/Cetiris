@@ -167,7 +167,18 @@ class Move {
       contacts |= board.conflict(x, y);
     }
     return contacts;
+  }
 
+  // 3-corner check
+  isTspin (type, board) {
+    if (type != 'T') return false;
+    let cnt = 0;
+    cnt += board.conflict(this.x - 1, this.y - 1) ? 1 : 0;
+    cnt += board.conflict(this.x - 1, this.y + 1) ? 1 : 0;
+    cnt += board.conflict(this.x + 1, this.y + 1) ? 1 : 0;
+    cnt += board.conflict(this.x + 1, this.y - 1) ? 1 : 0;
+
+    return cnt >= 3;
   }
 }
 
@@ -230,9 +241,32 @@ export class Game {
   }
 }
 
+export class Stats {
+  constructor () 
+  {
+    this.start = Date.now();
+    this.attacks = 0;
+    this.ds = 0;
+    this.pieces = 0;
+  }
+
+  get () {
+    const dt = Date.now() - this.start;
+    const pps = this.pieces / (dt / 1000);
+    const apm = this.attacks / (dt / 60000);
+
+    return {
+      attacks: this.attacks,
+      pieces: this.pieces,
+      pps,
+      apm,
+      vs: [ ( this.attacks + this.ds ) / this.pieces ] * pps * 100
+    }
+  }
+}
+
 export class State {
   constructor () {
-    this.counter = 1;
     this.board = new Board();
     this.dy = new Array(Board.HEIGHT).fill(0);
     this.queue = [];
@@ -240,6 +274,12 @@ export class State {
     this.bag = [];
     this.move = new Move(); 
     this.das = undefined;
+
+    this.combo = 0;
+    this.b2b = 0;
+
+    // Performance stats
+    this.stats = new Stats();
 
     // Gravity
     this.gravity_tick = 0;
@@ -329,11 +369,45 @@ export class State {
 
   // Places piece
   place () {
-    let type = this.queue.shift()[0];
+    const type = this.queue.shift()[0];
+    const is_tspin = this.move.isTspin(type, this.board);
     const { clears, dy } = this.board.place(type, this.move);
+    const attacks = this.calcAttacks(clears, is_tspin);
     this.dy = dy;
 
+    // Update combo & b2b
+    if (clears == 0) { this.combo = 0; this.b2b = 0; }
+    else this.combo ++;
+    if (!is_tspin && clears > 4) { this.b2b = 0; }
+    if ((is_tspin && clears > 0) || clears == 4) this.b2b ++; 
+
+    // Update stats
+    this.stats.pieces ++;
+    this.stats.ds += clears;
+    this.stats.attacks += attacks;
+
     this.pieceChangeResets();
+  }
+
+  // Calculates attacks based on b2b and combo
+  // NOTE: Does not mutate b2b nor combo
+  calcAttacks (clears, is_tspin) {
+    if (!is_tspin && clears < 4) {
+      return clears + Math.floor(this.combo / 2);
+    }
+    const b2b_level = 
+      this.b2b >= 1 ? 1 : 0 +
+      this.b2b >= 3 ? 1 : 0 +
+      this.b2b >= 8 ? 1 : 0 +
+      this.b2b >= 24 ? 1 : 0;
+
+    if (clears == 4) return 4 + b2b_level + this.combo;
+    if (clears == 3) return 6 + b2b_level + this.combo;
+    if (clears == 2) return 4 + b2b_level + this.combo;
+    if (clears == 1) return 2 + b2b_level + this.combo;
+    if (clears == 0) return 0;
+
+    return console.error("State::calcAttacks() received invalid clears: ", clears);
   }
 
   swapHold () {
@@ -355,7 +429,6 @@ export class State {
     // Reset move & bag
     this.move = new Move();
     this.draw();
-
 
     // Note: don't reset DAS: DAS preservation
     

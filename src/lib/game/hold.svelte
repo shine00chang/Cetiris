@@ -23,7 +23,7 @@
   }
 </script>
 
-<div class="mt-12">
+<div class="flex flex-col items-center mt-12">
   <div class="text-center text-2xl font-extrabold tracking-widest">Hold</div>
   <div
     class="bg-[#e9e6e3] rounded-xl"

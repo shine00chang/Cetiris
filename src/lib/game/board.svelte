@@ -106,7 +106,7 @@
   </div>
 
   <!-- Grid --> 
-  <div class="rounded-xl border-8 border-[#e9e6e3]" style="height: {S*20}px; width: {S*10}px; background: #e9e6e3;">
+  <div class="rounded-xl" style="height: {S*20}px; width: {S*10}px; background: #e9e6e3;">
 
     <!-- Ghost: Put ahead of "Piece" to be rendered behind-->
     <div style="position: relative">
