@@ -1,4 +1,4 @@
-export const S = 30; //px
+export const S = 25; //px
 
 export const COLORS = {
   L: "#e09334",

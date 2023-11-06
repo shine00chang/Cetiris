@@ -15,14 +15,14 @@
 
   <a href="/" style="transition: 500ms all ease-in-out; {onMainPage ? 
       "font-size: 6rem" : 
-      "font-size: 3rem"}"
+      "font-size: 2rem"}"
       class="tracking-wider font-bold">
     Cetiris
   </a>
 
   <p style="transition: 500ms all ease-in-out; {onMainPage ? 
       "font-size: 1rem; top: 0px" : 
-      "font-size: 1rem; top: -1rem"}" 
+      "font-size: 0.7rem; top: -0.5rem"}" 
      class="relative tracking-wide italic text-stone-600 {onMainPage ? 
      "mb-8" : 
      "ml-2 mb-2"}">

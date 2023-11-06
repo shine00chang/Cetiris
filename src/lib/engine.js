@@ -379,9 +379,9 @@ export class State {
     this.dy = dy;
 
     // Update combo & b2b
-    if (clears == 0) { this.combo = 0; this.b2b = 0; }
+    if (clears == 0) { this.combo = 0; }
     else this.combo ++;
-    if (!is_tspin && clears > 4) { this.b2b = 0; }
+    if (clears != 0 && !is_tspin && clears != 4) { this.b2b = 0; }
     if ((is_tspin && clears > 0) || clears == 4) this.b2b ++; 
 
     // Update stats

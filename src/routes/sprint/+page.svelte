@@ -13,6 +13,7 @@
 
   // Keydown Event
   const onKeyDown = (e) => {
+    e.preventDefault();
     if (state.over) return;
     inputs.push(e.key);
   }
