@@ -1,3 +1,6 @@
+import Config from './config.js';
+
+
 export class Piece {
   static basic (type) {
     if (type == "J") return [{x: -1, y: 0}, {x: 0, y: 0}, {x: 1, y: 0}, {x: -1, y: 1}];
@@ -321,7 +324,7 @@ export class State {
     }
 
     // DAS 
-    if (this.das != undefined && Date.now() - this.das.timestamp > 100) {
+    if (this.das != undefined && Date.now() - this.das.timestamp > Config.das) {
       this.move.das(this.queue[0], this.board, this.das.key == "ArrowLeft" ? -1 : 1);
       this.das = undefined;
     }
@@ -470,7 +473,7 @@ function applyKey (state, input) {
       break;
 
     case "ArrowDown":
-      state.gravity_tick += 10000;
+      state.gravity_tick += Config.sdf;
       break;
 
     case "c": 
