@@ -1,5 +1,5 @@
 <script>
-  import PieceBlock from "./pieceblock.svelte";
+  import PieceBlock from "./pieceBlock.svelte";
   import BoardBlock from "./boardBlock.svelte";
   import { onMount } from "svelte";
   import { S } from './displayConfigs.js';
