@@ -6,6 +6,8 @@
   import Stats from './stats.svelte';
 
   export let state;
+  export let win;
+
   let stats;
 
   $: stats = state.stats.get();
@@ -19,6 +21,14 @@
     <Combo combo={state.combo} b2b={state.b2b} />
     <Stats {...stats}/>
   </div>
-  <Board { state }/>
+  <Board { state }>
+    <div slot="gameover">
+      {#if win}
+        <slot name="win" />
+      {:else} 
+        <slot name="lose" />
+      {/if}
+    </div>
+  </Board>
   <Queue queue={ state.queue } />
 </div>

@@ -93,16 +93,14 @@
     }
   }
 </script>
-  <div class="relative" style="overflow: hidden">
+<div class="relative" style="overflow: hidden">
   <!-- Game over Overlay -->
   <div class="absolute z-[40] bg-stone-400 {state.over ? "opacity-70" : "opacity-0" }"
        style="height: {S*20}px; width: {S*10}px; transition: all 400ms;"></div>
 
   <div class="absolute z-[40] {state.over ? "opacity-100" : "opacity-0" }"
        style="width: {S*10}px; transition: all 400ms">
-    <div class="mx-auto relative mt-36 text-center text-3xl font-black tracking-widest italic opacity-100">
-      Game Over
-    </div>
+    <slot name="gameover" />
   </div>
 
   <!-- Grid --> 

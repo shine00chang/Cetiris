@@ -4,18 +4,17 @@
 </div>
 
 <div class="space-y-6">
-<a href="/sprint" class="btn w-96 btn-hover-mv-left">
-  Sprint
-</a>
-<br>
 
-<button class="btn w-96 btn-hover-mv-left">
-  Bot
-</button>
-<br>
+  <a href="/sprint" class="btn w-96 btn-hover-mv-left"> Sprint </a>
+  <br>
 
-<a href="/config" class="btn w-96 btn-hover-mv-left">
-  Config
-</a>
-<br>
+  <a href="/zen" class="btn w-96 btn-hover-mv-left"> Zen </a>
+  <br>
+
+  <a href="/bot" class="btn w-96 btn-hover-mv-left"> Bot </a>
+  <br>
+
+  <a href="/config" class="btn w-96 btn-hover-mv-left"> Config </a>
+  <br>
+
 </div>

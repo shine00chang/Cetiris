@@ -261,6 +261,7 @@ export class Stats {
     return {
       attacks: this.attacks,
       pieces: this.pieces,
+      ds: this.ds,
       pps,
       apm,
       vs: [ ( this.attacks + this.ds ) / this.pieces ] * pps * 100
