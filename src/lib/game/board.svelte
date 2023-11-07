@@ -24,7 +24,7 @@
     ghost_blocks = move.cells(type).map(block => { return {...block, type } });
   }
 
-  let blocks_master = new Array(200);
+  let blocks_master = new Array(300);
   let block_bank = [];
   let board_blocks = [];
 
@@ -71,6 +71,11 @@
         // If not in board_blocks
         if (cells[y][x] == undefined && state.board.occupied(x, y))
         {
+
+          if (block_bank.length == 0) {
+            console.error("block bank ran empty ???");
+            continue;
+          }
           // Take from bank, set data, add to board_blocks
           const block = block_bank.shift();
 

@@ -1,15 +1,23 @@
 <script>
   import GameElem from '$lib/game/game.svelte';
+  import BotGame from '$lib/game/botGame.svelte';
 
-  import { POLL_RATE } from '$lib/config.js';
+  import Config, { POLL_RATE } from '$lib/config.js';
   import { State, Game } from '$lib/engine.js';
+  import { randString } from '$lib/rand.js';
 
+  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   
+  import workerURL from '$lib/bot.js?url';
 
+  // NOTE: The bot assumes SDF to be instant.
+  Config.sdf = 10000;
+
+  const seed = randString(10);
   let game = new Game();
-  let state = new State();
-  let stateBot = new State();
+  let state = new State(seed);
+  let stateBot = new State(seed);
   let inputs = [];
   let inputsBot = [];
 
@@ -20,9 +28,71 @@
   const restart  = () => document.location.reload(); // Reload page, trigger on 'r'
   const escape   = () => goto('/'); // Return to menu, trigger on 'esc'
   const getfocus = (e) => e.focus(); // Get foucs
+
   
+  // Initializes bot worker
+  let worker;
+  const botPPS = 1.5;
+  const botInterval = 1000 / botPPS;
+
+  onMount(() => {
+    worker = new Worker(workerURL);
+    worker.lastMoveTime = 0;
+
+    // Callback on 'solution' message
+    const onSolution = (inputs) => {
+
+      // delay: time to wait before making move. (ms)
+      const delay = botInterval - (Date.now() - worker.lastMoveTime);
+      console.log(Date.now() - worker.lastMoveTime, delay);
+
+      const func = () => {
+        inputsBot.push(...inputs)
+        worker.lastMoveTime = Date.now();
+      };
+
+      // if delay > 0, timeout. otherwise, add immediately.
+      if (delay <= 0) {
+        func();
+      } else {
+        setTimeout(func, delay);
+      }
+    }
+
+    // Message callback
+    worker.onmessage = e => {
+      console.log(`message from worker: `, e.data);
+      const msg = Array.isArray(e.data) ? e.data[0] : e.data;
+
+      // Once done init, start first move to start the cycle:
+      if (msg == "init-done") worker.postMessage(["run", stateBot, botInterval]);
+
+      // If receieved solution, add to inputs.
+      if (msg == "solution") onSolution(e.data[1]);
+    }
+
+    worker.onerror = e => console.log(`error from worker:`, e);
+  });
+
+  // Initialize states
+  onMount(() => {
+    startTime = Date.now();
+  });
+
+
+  // Checks for end condition, and nothing else
+  // @return (bool) if game over
   const endCondition = () => {
-    if (!state.over && !stateBot.over) return false;
+    return state.over || stateBot.over;
+  }
+
+  // Does the necessary state-mutation on ending.
+  const onEnd = () => {
+
+    clearInterval(interval);
+
+    // Stop worker
+    if (worker != undefined) worker.terminate();
 
     win = stateBot.over;
 
@@ -34,7 +104,9 @@
       time = m == 0 ? `${s %60}.${ms %1000}` : `${m}:${s %60}.${ms %1000}`;
     }
 
-    return true;
+    // Set states: Necessary for game over overlay on the <Board> elements
+    state.over = true;
+    stateBot.over = true;
   }
 
 
@@ -67,19 +139,16 @@
     }
   }
 
+
   // Refreshing
   const interval = setInterval(() => {
 
-    // If over, stop interval
-    if (state.over) {
-      clearInterval(interval);
-      return;
-    }
-
-    state.applyInputs(inputs);
+    if (inputsBot.length != 0) console.log("guh");
+    
+    state.applyInputs(game, inputs);
     state.refresh(game);
 
-    stateBot.applyInputs(inputsBot);
+    stateBot.applyInputs(game, inputsBot);
     stateBot.refresh(game);
 
     // Exchange garbage
@@ -90,23 +159,40 @@
     state = state;
     stateBot = stateBot;
 
+    // Check if bot made a move, start next solve.
+    if (inputsBot.length != 0) {
+      worker.postMessage(["run", stateBot, botInterval]);
+    }
+
+    // Clear inputs
     inputs = [];
     inputsBot = [];
 
-    if (endCondition()) {
-      state.over = true;
-      stateBot.over = true;
-    }
+    // Check end condition
+    if (endCondition()) onEnd();
   }, 1000/POLL_RATE);
 
 </script>
 
 
-<div use:getfocus tabindex="0" on:keydown={onKeyDown} on:keyup={onKeyUp}
-  class="w-full h-full">
-  <GameElem state={state} win={false}>
+<div class="flex gap-4">
+  <div use:getfocus tabindex="0" on:keydown={onKeyDown} on:keyup={onKeyUp}
+    class="w-full h-full">
+    <GameElem state={state} win={false}>
+      <div slot="lose" class="mx-auto relative mt-36 text-center text-3xl font-black tracking-widest italic">
+        <div>Game Over</div>
+        <div class="text-xl font-black tracking-widest italic">{time}</div>
+      </div>
+      <div slot="win" class="mx-auto relative mt-36 text-center">
+        <div class="text-xl font-black tracking-widest italic">{time}</div>
+        <div class="text-md font-bold">play again with <kbd class="kbd">R</kbd></div>
+      </div>
+    </GameElem>
+  </div>
+
+  <BotGame state={stateBot}>
     <div slot="lose" class="mx-auto relative mt-36 text-center text-3xl font-black tracking-widest italic">
       Game Over
     </div>
-  </GameElem>
+  </BotGame>
 </div>

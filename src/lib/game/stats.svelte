@@ -12,7 +12,7 @@
 </script>
 
 <div class="grid grid-cols-5 w-36 gap-1
-  text-center text-md  tracking-widest">
+  text-center text-md  tracking-normal">
   <div class="col-span-2 font-bold">
     <div>APM</div>
     <div>PPS</div>

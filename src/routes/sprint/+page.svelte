@@ -71,7 +71,7 @@
       return;
     }
 
-    state.applyInputs(inputs);
+    state.applyInputs(game, inputs);
     state.refresh(game);
 
     // Workaroud for object reactivity

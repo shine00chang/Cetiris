@@ -1,4 +1,5 @@
 import Config from './config.js';
+import { rand, newState, randString } from './rand.js';
 
 
 export class Piece {
@@ -297,7 +298,7 @@ export class Stats {
 }
 
 export class State {
-  constructor () {
+  constructor (seed) {
     this.board = new Board();
     this.dy = new Array(Board.HEIGHT).fill(0);
     this.queue = [];
@@ -306,6 +307,12 @@ export class State {
     this.move = new Move(); 
     this.das = undefined;
 
+    // RNG
+    // If no seed, make your own
+    if (seed == undefined) seed = randString(10);
+    this.piece_rand_state = newState(seed);
+
+    // Combos
     this.combo = 0;
     this.b2b = 0;
 
@@ -334,14 +341,17 @@ export class State {
         this.bag = ["J", "L", "S", "Z", "T", "I", "O"];
       }
 
-      const index = Math.floor(Math.random() * this.bag.length);
-      const piece = this.bag.splice(index, 1);
+      const [ new_state, num ] = rand(this.piece_rand_state);
+      this.piece_rand_state = new_state;
+
+      const index = Math.floor(num * this.bag.length);
+      const piece = this.bag.splice(index, 1)[0];
       this.queue.push(piece);
     }
   }
 
   /* Called on refresh */
-  applyInputs (inputs) {
+  applyInputs (game, inputs) {
     if (this.over) { 
       console.error("State::applyInputs() called despite state over");
       return;
@@ -355,13 +365,21 @@ export class State {
 
     // Process inputs
     for (const input of inputs) {
-      applyKey(this, input);
+      applyKey(this, game, input);
     }
 
     // DAS 
     if (this.das != undefined && Date.now() - this.das.timestamp > Config.das) {
       this.move.das(this.queue[0], this.board, this.das.key == "ArrowLeft" ? -1 : 1);
       this.das = undefined;
+    }
+  }
+
+  // Processes gravity_tick and drops accordingly.
+  gravity (game) {
+    while (this.gravity_tick > game.gravity_limit) {
+      this.move.softDrop(this.queue[0], this.board);
+      this.gravity_tick -= game.gravity_limit;
     }
   }
 
@@ -385,10 +403,7 @@ export class State {
     // Gravity
     if (!this.move.inContact(this.queue[0], this.board)) {
       this.gravity_tick += game.gravity_rate;
-      while (this.gravity_tick > game.gravity_limit) {
-        this.move.softDrop(this.queue[0], this.board);
-        this.gravity_tick -= game.gravity_limit;
-      }
+      this.gravity(game);
     }
 
     // Game over 
@@ -506,7 +521,7 @@ export class State {
 }
 
 // Applies a single input to the state
-function applyKey (state, input) {
+function applyKey (state, game, input) {
   switch (input) {
     case "ArrowLeft": 
     case "ArrowRight": 
@@ -538,6 +553,12 @@ function applyKey (state, input) {
 
     case "ArrowDown":
       state.gravity_tick += Config.sdf;
+
+      // NOTE: must process now, and not wait till State::refresh(), since the player 
+      // may assume SD to be processed before other inputs in a single frame.
+      // - The bot assumes this.
+      state.gravity(game);
+
       break;
 
     case "c": 
