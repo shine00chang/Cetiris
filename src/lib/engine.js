@@ -233,6 +233,33 @@ class Board {
 
     return { clears, dy };
   }
+
+  /* Called by State::place(), adds garbage to board
+   * - Only adds a capped amount
+   * @return: {
+   *   garbage: (num) the remaining garbage in queue
+   *   dy: [num] y-deltas. To be added with other y-deltas to produce the final y-delta.
+   * }
+   */
+  insertGarbage (garbage) {
+    const g = Math.min(garbage, 10);
+    const hole = Math.floor(Math.random() * 10);
+
+    // Add rows
+    for (let i=0; i<g; i++) {
+      const row = new Array(10).fill('G');
+      row[hole] = '-';
+      this.board.splice(0, 0, row);
+    }
+
+    // Trim
+    this.board.splice(Board.HEIGHT, 100);
+
+    return {
+      garbage: garbage - g,
+      dy: new Array(Board.HEIGHT).fill(g),
+    }
+  }
 }
 
 export class Game {
@@ -284,6 +311,10 @@ export class State {
 
     // Performance stats
     this.stats = new Stats();
+    
+    // Garbage
+    this.attacks = 0;
+    this.garbage_queue = 0;
 
     // Gravity
     this.gravity_tick = 0;
@@ -318,6 +349,9 @@ export class State {
 
     // Reset DY
     this.dy = new Array(Board.HEIGHT).fill(0);
+    
+    // Reset attacks: used for garbage exchange
+    this.attacks = 0;
 
     // Process inputs
     for (const input of inputs) {
@@ -376,8 +410,7 @@ export class State {
     const type = this.queue.shift()[0];
     const is_tspin = this.move.isTspin(type, this.board);
     const { clears, dy } = this.board.place(type, this.move);
-    const attacks = this.calcAttacks(clears, is_tspin);
-    this.dy = dy;
+    let attacks = this.calcAttacks(clears, is_tspin);
 
     // Update combo & b2b
     if (clears == 0) { this.combo = 0; }
@@ -389,6 +422,31 @@ export class State {
     this.stats.pieces ++;
     this.stats.ds += clears;
     this.stats.attacks += attacks;
+
+    // Garbage cancellation: Must be done after stats update
+    {
+      const d = this.garbage_queue - attacks;
+      if (d > 0) {
+        this.garbage_queue = d;
+        attacks = 0;
+      } else {
+        this.garbage_queue = 0;
+        attacks = -d;
+      }
+    }
+
+    // Report attacks: Necessary for garbage exchange
+    this.attacks = attacks;
+
+    // Insert garbage 
+    const { garbage, dy: dy_g } = this.board.insertGarbage(this.garbage_queue);
+
+    // Combine dy's
+    this.dy = dy.map((x, i) => {
+      if (x == 'cleared') return 'cleared';
+      return x + dy_g[i + x];
+    })
+    this.garbage_queue = garbage;
 
     this.pieceChangeResets();
   }
@@ -439,6 +497,11 @@ export class State {
     // Reset lock & gravity tick
     this.lock_tick = 0;
     this.gravity_tick = 0;
+  }
+
+  /* Adds garbage to queue, to be inserted in the next placement */
+  applyAttacks (attacks) {
+    this.garbage_queue += attacks;
   }
 }
 
