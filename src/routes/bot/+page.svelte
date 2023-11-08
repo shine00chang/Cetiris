@@ -98,10 +98,14 @@
 
     // Format time string
     {
-      const ms = Date.now() - startTime;
-      const s = Math.floor(ms / 1000);
-      const m = Math.floor(s / 60);
-      time = m == 0 ? `${s %60}.${ms %1000}` : `${m}:${s %60}.${ms %1000}`;
+      let ms = Date.now() - startTime;
+      let s = Math.floor(ms / 1000);
+      let m = Math.floor(s / 60);
+      ms = (ms % 1000).toString().padStart(3, "0");
+      s = (s % 60).toString()
+      if (m != 0) s = s.padStart(2, "0");
+      m = m.toString()
+      time = m == 0 ? `${s}.${ms}` : `${m}:${s}.${ms}`;
     }
 
     // Set states: Necessary for game over overlay on the <Board> elements

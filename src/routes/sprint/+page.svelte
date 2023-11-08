@@ -19,21 +19,25 @@
   const getfocus = (e) => e.focus(); // Get foucs
   
   const endCondition = () => {
-    if (state.stats.get().ds >= 40) {
+    return state.over || state.stats.get().ds >= 1;
+  }
 
-      // Set win: this tells <GameElem> to display the win screen, not the gameover screen
-      win = true;
+  const onEnd = () => {
+    // Won if: cleared 40 lines.
+    win = state.stats.get().ds >= 1;
 
-      // Format time string
-      const ms = Date.now() - startTime;
-      const s = Math.floor(ms / 1000);
-      const m = Math.floor(s / 60);
-      time = m == 0 ? `${s %60}.${ms %1000}` : `${m}:${s %60}.${ms %1000}`;
+    // Format time string
+    let ms = Date.now() - startTime;
+    let s = Math.floor(ms / 1000);
+    let m = Math.floor(s / 60);
+    ms = (ms % 1000).toString().padStart(3, "0");
+    s = (s % 60).toString()
+    if (m != 0) s = s.padStart(2, "0");
+    m = m.toString()
+    time = m == 0 ? `${s}.${ms}` : `${m}:${s}.${ms}`;
 
-      return true;
-    } else {
-      return false;
-    }
+    clearInterval(interval);
+    state.over = true;
   }
 
   // Keydown Event
@@ -65,12 +69,6 @@
   // Refreshing
   const interval = setInterval(() => {
 
-    // If over, stop interval
-    if (state.over) {
-      clearInterval(interval);
-      return;
-    }
-
     state.applyInputs(game, inputs);
     state.refresh(game);
 
@@ -80,9 +78,7 @@
     inputs = [];
 
     // Check end condition
-    if (endCondition()) {
-      state.over = true;
-    }
+    if (endCondition()) onEnd();
   }, 1000/POLL_RATE);
 
 </script>
