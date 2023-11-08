@@ -14,8 +14,8 @@
   let startTime = undefined;
   let time = undefined;
 
-  const restart  = () => document.location.reload(); // Reload page, trigger on 'r'
-  const escape   = () => goto('/'); // Return to menu, trigger on 'esc'
+  const restart  = () => { onEnd(); document.location.reload(); } // Reload page, trigger on 'r'
+  const escape   = () => { goto('/'); onEnd(); } // Return to menu, trigger on 'esc'
   const getfocus = (e) => e.focus(); // Get foucs
   
   const endCondition = () => {

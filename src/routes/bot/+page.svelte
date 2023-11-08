@@ -25,8 +25,8 @@
   let time = undefined;
   let win = false;
 
-  const restart  = () => document.location.reload(); // Reload page, trigger on 'r'
-  const escape   = () => goto('/'); // Return to menu, trigger on 'esc'
+  const restart  = () => { onEnd(); document.location.reload(); } // Reload page, trigger on 'r'
+  const escape   = () => { goto('/'); onEnd(); } // Return to menu, trigger on 'esc'
   const getfocus = (e) => e.focus(); // Get foucs
 
   
@@ -36,42 +36,60 @@
   const botInterval = 1000 / botPPS;
 
   onMount(() => {
-    worker = new Worker(workerURL);
-    worker.lastMoveTime = 0;
 
-    // Callback on 'solution' message
-    const onSolution = (inputs) => {
+    fetch(workerURL,
+    {
+        method: "GET",
+        headers: {
+            "Cross-Origin-Embedder-Policy": "credentialless",
+            "Cross-Origin-Opener-Policy": "same-origin"
+        }
+    })
+      .then(res => res.text())
+      .then(workerFile => {
+        console.log(workerFile);
 
-      // delay: time to wait before making move. (ms)
-      const delay = botInterval - (Date.now() - worker.lastMoveTime);
-      console.log(Date.now() - worker.lastMoveTime, delay);
+        // Create blob
+        let blob = new Blob([workerFile], {type: 'application/javascript'});
+        worker = new Worker(URL.createObjectURL(blob));
+        worker.lastMoveTime = 0;
 
-      const func = () => {
-        inputsBot.push(...inputs)
-        worker.lastMoveTime = Date.now();
-      };
+        // Send location
+        worker.postMessage(["location", window.location.origin]);
 
-      // if delay > 0, timeout. otherwise, add immediately.
-      if (delay <= 0) {
-        func();
-      } else {
-        setTimeout(func, delay);
-      }
-    }
+        // Callback on 'solution' message
+        const onSolution = (inputs) => {
+          // delay: time to wait before making move. (ms)
+          const delay = botInterval - (Date.now() - worker.lastMoveTime);
+          console.log(Date.now() - worker.lastMoveTime, delay);
 
-    // Message callback
-    worker.onmessage = e => {
-      console.log(`message from worker: `, e.data);
-      const msg = Array.isArray(e.data) ? e.data[0] : e.data;
+          const func = () => {
+            inputsBot.push(...inputs)
+            worker.lastMoveTime = Date.now();
+          };
 
-      // Once done init, start first move to start the cycle:
-      if (msg == "init-done") worker.postMessage(["run", stateBot, botInterval]);
+          // if delay > 0, timeout. otherwise, add immediately.
+          if (delay <= 0) {
+            func();
+          } else {
+            setTimeout(func, delay);
+          }
+        }
 
-      // If receieved solution, add to inputs.
-      if (msg == "solution") onSolution(e.data[1]);
-    }
+        // Message callback
+        worker.onmessage = e => {
+          console.log(`message from worker: `, e.data);
+          const msg = Array.isArray(e.data) ? e.data[0] : e.data;
 
-    worker.onerror = e => console.log(`error from worker:`, e);
+          // Once done init, start first move to start the cycle:
+          if (msg == "init-done") worker.postMessage(["run", stateBot, botInterval]);
+
+          // If receieved solution, add to inputs.
+          if (msg == "solution") onSolution(e.data[1]);
+        }
+
+        worker.onerror = e => console.log(`error from worker:`, e);
+      });
   });
 
   // Initialize states
