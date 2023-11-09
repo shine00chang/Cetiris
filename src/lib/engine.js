@@ -275,7 +275,9 @@ export class Game {
 export class Stats {
   constructor () 
   {
-    this.start = Date.now();
+    // The encapsulating State object will set the start. 
+    // This is because the start of the game may not be when the state object was instantiated.
+    this.start = undefined;
     this.attacks = 0;
     this.ds = 0;
     this.pieces = 0;
@@ -390,6 +392,13 @@ export class State {
       console.error("State::refresh() called despite state over");
       return;
     }
+
+    // Set Stats' start time. 
+    // This must be done here and not at construction since the start of the game may not be at the object's instantiation.
+    if (this.stats.start === undefined) {
+      this.stats.start = Date.now();
+    }
+
     // Locking 
     if (this.move.inContact(this.queue[0], this.board)) {
       this.lock_tick += 1;

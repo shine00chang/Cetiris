@@ -29,14 +29,13 @@
   const escape   = () => { goto('/'); onEnd(); } // Return to menu, trigger on 'esc'
   const getfocus = (e) => e.focus(); // Get foucs
 
-  
-  // Initializes bot worker
+  // Worker
   let worker;
-  const botPPS = 1.5;
-  const botInterval = 1000 / botPPS;
+  let botPPS = 1.5;
+  let botInterval;
+  $: botInterval = 1000 / botPPS;
 
-  onMount(() => {
-
+  function startWorker () {
     fetch(workerURL,
     {
         method: "GET",
@@ -90,12 +89,22 @@
 
         worker.onerror = e => console.log(`error from worker:`, e);
       });
-  });
 
-  // Initialize states
-  onMount(() => {
-    startTime = Date.now();
-  });
+  }
+
+  // Open bot speed modal
+  onMount(() => bot_speed_modal.showModal());
+
+  // Called once modal is closed
+  const start = () => {
+    // Initialize time
+    startTime = Date.now()
+    
+    // Clear inputs: keydown function still writes to inputs when modal is active.
+    inputs = [];
+    startWorker();
+    startInterval();
+  }
 
 
   // Checks for end condition, and nothing else
@@ -163,51 +172,71 @@
 
 
   // Refreshing
-  const interval = setInterval(() => {
+  let interval;
+  function startInterval () {
+    interval = setInterval(() => {
+      if (inputsBot.length != 0) console.log("guh");
+      
+      state.applyInputs(game, inputs);
+      state.refresh(game);
 
-    if (inputsBot.length != 0) console.log("guh");
-    
-    state.applyInputs(game, inputs);
-    state.refresh(game);
+      stateBot.applyInputs(game, inputsBot);
+      stateBot.refresh(game);
 
-    stateBot.applyInputs(game, inputsBot);
-    stateBot.refresh(game);
+      // Exchange garbage
+      state.applyAttacks(stateBot.attacks);
+      stateBot.applyAttacks(state.attacks);
+      
+      // Workaroud for object reactivity
+      state = state;
+      stateBot = stateBot;
 
-    // Exchange garbage
-    state.applyAttacks(stateBot.attacks);
-    stateBot.applyAttacks(state.attacks);
-    
-    // Workaroud for object reactivity
-    state = state;
-    stateBot = stateBot;
+      // Check if bot made a move, start next solve.
+      if (inputsBot.length != 0) {
+        worker.postMessage(["run", stateBot, botInterval]);
+      }
 
-    // Check if bot made a move, start next solve.
-    if (inputsBot.length != 0) {
-      worker.postMessage(["run", stateBot, botInterval]);
-    }
+      // Clear inputs
+      inputs = [];
+      inputsBot = [];
 
-    // Clear inputs
-    inputs = [];
-    inputsBot = [];
-
-    // Check end condition
-    if (endCondition()) onEnd();
-  }, 1000/POLL_RATE);
+      // Check end condition
+      if (endCondition()) onEnd();
+    }, 1000/POLL_RATE);
+  }
 
 </script>
 
+<!-- Bot speed modal -->
+<dialog id="bot_speed_modal" class="modal" on:close={start}>
+  <div class="modal-box">
+    <h3 class="font-bold text-lg">Bot Speed</h3>
+    <div class="form-control w-full max-w-xs">
+      <span class="text-md font-bold">
+        <input type="number"class="text-right w-16" bind:value={botPPS}/>
+        pps
+      </span>
+      <input type="range" min="0.5" max="3" step="0.1" bind:value={botPPS} class="range range-primary" />
+    </div>
+
+    <!-- start button -->
+    <form method="dialog">
+      <button class="btn">start</button>
+    </form>
+  </div>
+</dialog>
 
 <div class="flex gap-4">
   <div use:getfocus tabindex="0" on:keydown={onKeyDown} on:keyup={onKeyUp}
     class="w-full h-full">
-    <GameElem state={state} win={false}>
+    <GameElem state={state} win={win}>
       <div slot="lose" class="mx-auto relative mt-36 text-center text-3xl font-black tracking-widest italic">
         <div>Game Over</div>
         <div class="text-xl font-black tracking-widest italic">{time}</div>
       </div>
       <div slot="win" class="mx-auto relative mt-36 text-center">
+        <div>You Win!</div>
         <div class="text-xl font-black tracking-widest italic">{time}</div>
-        <div class="text-md font-bold">play again with <kbd class="kbd">R</kbd></div>
       </div>
     </GameElem>
   </div>
