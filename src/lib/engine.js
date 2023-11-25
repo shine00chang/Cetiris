@@ -578,6 +578,4 @@ function applyKey (state, game, input) {
       state.das = undefined;
       break;
   }
-
-  state.counter ++;
 }

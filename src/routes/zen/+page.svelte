@@ -19,9 +19,6 @@
   const onKeyDown = (e) => {
     e.preventDefault();
 
-    // Start timer
-    if (startTime == undefined) startTime = Date.now();
-
     // Restart
     if (e.key == "r") restart();
 

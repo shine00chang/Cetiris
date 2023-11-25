@@ -19,22 +19,26 @@
   const getfocus = (e) => e.focus(); // Get foucs
   
   const endCondition = () => {
-    return state.over || state.stats.get().ds >= 1;
+    return state.over || state.stats.get().ds >= 40;
   }
 
   const onEnd = () => {
     // Won if: cleared 40 lines.
-    win = state.stats.get().ds >= 1;
+    win = state.stats.get().ds >= 40;
 
-    // Format time string
-    let ms = Date.now() - startTime;
-    let s = Math.floor(ms / 1000);
-    let m = Math.floor(s / 60);
-    ms = (ms % 1000).toString().padStart(3, "0");
-    s = (s % 60).toString()
-    if (m != 0) s = s.padStart(2, "0");
-    m = m.toString()
-    time = m == 0 ? `${s}.${ms}` : `${m}:${s}.${ms}`;
+    // Calculate time only if time is undefined. 
+    // - Since 'onEnd()' could be called on restart after end.
+    if (time == undefined) {
+      // Format time string
+      let ms = Date.now() - startTime;
+      let s = Math.floor(ms / 1000);
+      let m = Math.floor(s / 60);
+      ms = (ms % 1000).toString().padStart(3, "0");
+      s = (s % 60).toString()
+      if (m != 0) s = s.padStart(2, "0");
+      m = m.toString()
+      time = m == 0 ? `${s}.${ms}` : `${m}:${s}.${ms}`;
+    }
 
     clearInterval(interval);
     state.over = true;
